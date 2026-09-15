@@ -1,0 +1,1 @@
+-- Intentionally empty: financial and Auth fixtures belong only in isolated tests.
