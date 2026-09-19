@@ -445,6 +445,7 @@ export type Database = {
       create_installment_expense: { Args: { p_description: string | null; p_category_id: string | null; p_amount: number | null; p_transaction_date: string | null; p_due_date: string | null; p_payment_method: Database['public']['Enums']['payment_method'] | null; p_notes: string | null; p_account_id: string | null; p_installment_count: number | null }; Returns: (string)[] };
       create_paid_expense: { Args: { p_description: string | null; p_category_id: string | null; p_amount: number | null; p_transaction_date: string | null; p_due_date: string | null; p_planned_payment_method: Database['public']['Enums']['payment_method'] | null; p_notes: string | null; p_account_id: string | null; p_payment_method: Database['public']['Enums']['payment_method'] | null; p_settled_at: string | null }; Returns: string };
       create_received_income: { Args: { p_description: string | null; p_category_id: string | null; p_amount: number | null; p_transaction_date: string | null; p_due_date: string | null; p_notes: string | null; p_account_id: string | null; p_received_at: string | null }; Returns: string };
+      delete_expense: { Args: { p_expense_id: string | null }; Returns: undefined };
       generate_recurrences: { Args: { p_through_date: string | null }; Returns: number };
       pay_invoice: { Args: { p_invoice_id: string | null; p_account_id: string | null; p_paid_at: string | null }; Returns: string };
       reverse_movement: { Args: { p_movement_id: string | null; p_reversed_at: string | null }; Returns: string };

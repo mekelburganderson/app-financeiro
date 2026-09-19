@@ -166,11 +166,9 @@ export async function updateExpense(expenseId: string, input: ExpenseInput): Pro
   throwExpenseError(error)
 }
 
-export async function deleteExpense(userId: string, expenseId: string): Promise<void> {
-  const { data, error } = await getSupabaseClient().from('transactions').delete()
-    .eq('user_id', userId).eq('id', expenseId).eq('type', 'expense').select('id').single()
+export async function deleteExpense(expenseId: string): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('delete_expense', { p_expense_id: expenseId })
   throwExpenseError(error)
-  if (!data) throw new ExpenseServiceError('permission')
 }
 
 export async function settleExpense(expenseId: string, accountId: string, method: Exclude<ExpenseInput['planned_payment_method'], 'credit_card'>, settledAt: string): Promise<void> {

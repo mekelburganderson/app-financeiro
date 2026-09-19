@@ -86,12 +86,7 @@ export function useExpenses(userId: string | null) {
   }
 
   function update(expenseId: string, input: ExpenseInput) { return execute(() => updateExpense(expenseId, input)) }
-  function remove(expenseId: string) {
-    return execute(() => {
-      if (!userId) throw new Error('Usuário não autenticado.')
-      return deleteExpense(userId, expenseId)
-    })
-  }
+  function remove(expenseId: string) { return execute(() => deleteExpense(expenseId)) }
   function pay(expenseId: string, accountId: string, method: Exclude<PaymentMethod, 'credit_card'>, date: string) {
     return execute(() => settleExpense(expenseId, accountId, method, date))
   }

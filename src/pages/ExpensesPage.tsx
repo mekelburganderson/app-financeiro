@@ -48,9 +48,14 @@ export function ExpensesPage() {
     setMessage({ text: editing ? 'Despesa atualizada com sucesso.' : 'Despesa criada com sucesso.', error: false })
   }
   async function remove(item: ExpenseRecord) {
-    if (!window.confirm(`Excluir a despesa “${item.description}”?`)) return
+    const question = item.recurrence_rule_id
+      ? `Excluir apenas esta ocorrência de “${item.description}”? As próximas ocorrências continuarão normalmente.`
+      : `Excluir a despesa “${item.description}”?`
+    if (!window.confirm(question)) return
     const result = await expenses.remove(item.id)
-    setMessage(result.ok ? { text: 'Despesa excluída com sucesso.', error: false } : { text: friendlyError(result.error), error: true })
+    setMessage(result.ok
+      ? { text: item.recurrence_rule_id ? 'Ocorrência excluída com sucesso.' : 'Despesa excluída com sucesso.', error: false }
+      : { text: friendlyError(result.error), error: true })
   }
   async function confirmPayment(accountId: string, method: Exclude<PaymentMethod, 'credit_card'>, date: string) {
     if (!payment) return

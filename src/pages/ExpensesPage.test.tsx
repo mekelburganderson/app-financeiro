@@ -171,7 +171,17 @@ test('23: fatura fechada bloqueia campos financeiros e explica o motivo', async 
 })
 test('24: exclusão permitida confirma e chama o serviço', async () => {
   vi.spyOn(window, 'confirm').mockReturnValue(true); vi.mocked(listExpenses).mockResolvedValue(dataset([baseExpense])); mount(); await loaded()
-  fireEvent.click(screen.getByRole('button', { name: 'Excluir' })); await waitFor(() => expect(deleteExpense).toHaveBeenCalledWith(user.id, baseExpense.id))
+  fireEvent.click(screen.getByRole('button', { name: 'Excluir' })); await waitFor(() => expect(deleteExpense).toHaveBeenCalledWith(baseExpense.id))
+})
+test('24b: exclusão recorrente explica que remove somente a ocorrência', async () => {
+  const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(true)
+  const recurring = { ...baseExpense, recurrence_rule_id: 'rule-1', recurrence_frequency: 'monthly' as const,
+    recurrence_interval_count: 1 }
+  vi.mocked(listExpenses).mockResolvedValue(dataset([recurring])); mount(); await loaded()
+  fireEvent.click(screen.getByRole('button', { name: 'Excluir' }))
+  expect(confirmation).toHaveBeenCalledWith(expect.stringContaining('apenas esta ocorrência'))
+  await waitFor(() => expect(deleteExpense).toHaveBeenCalledWith(recurring.id))
+  expect(await screen.findByText('Ocorrência excluída com sucesso.')).toBeTruthy()
 })
 test('25: recusa do banco por histórico mostra erro amigável', async () => {
   vi.spyOn(window, 'confirm').mockReturnValue(true); vi.mocked(deleteExpense).mockRejectedValue(new ExpenseServiceError('history'))

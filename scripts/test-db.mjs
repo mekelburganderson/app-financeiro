@@ -251,6 +251,26 @@ test('recurrence wrapper generates separate expenses and card edits preserve clo
   });
 });
 
+test('deleting a recurring expense keeps the rule active without regenerating the removed occurrence', async () => {
+  const f = await fixture();
+  await asUser(f.userId, async () => {
+    const ruleId = await scalar(`select public.create_expense_recurrence($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, [
+      'Assinatura', f.expenseCategoryId, 100, 'monthly', 1, '2026-01-10', null, 4,
+      'boleto', null, null, null, '2026-02-10',
+    ]);
+    const removedId = await scalar(`select id from public.transactions
+      where recurrence_rule_id=$1 and transaction_date='2026-02-10'`, [ruleId]);
+
+    await db.query('select public.delete_expense($1)', [removedId]);
+
+    assert.equal(await scalar('select active from public.recurrence_rules where id=$1', [ruleId]), true);
+    assert.equal(Number(await scalar('select public.generate_recurrences($1)', ['2026-04-30'])), 2);
+    const dates = (await rows(`select transaction_date::text from public.transactions
+      where recurrence_rule_id=$1 order by transaction_date`, [ruleId])).map((row) => row.transaction_date);
+    assert.deepEqual(dates, ['2026-01-10', '2026-03-10', '2026-04-10']);
+  });
+});
+
 test('income lifecycle keeps competence separate from cash flow and preserves RLS', async () => {
   const f = await fixture();
   const foreign = await fixture();
@@ -335,6 +355,7 @@ test('RLS isolates two users, rejects foreign ownership, and protects both aggre
       }
     }
     await mustReject('select public.generate_recurrences($1)', ['2026-01-01']);
+    await mustReject('select public.delete_expense($1)', [randomUUID()]);
   } finally {
     await db.exec('reset role');
   }
@@ -615,6 +636,11 @@ test('recurrences respect calendar anchors, frequency intervals, end dates, and 
 test('deleting an Auth user cascades its financial data while ordinary historical deletes remain blocked', async () => {
   const f = await fixture();
   await asUser(f.userId, async () => {
+    const recurrenceId = await scalar(`insert into public.recurrence_rules(user_id,type,description,category_id,amount,frequency,start_date)
+      values ($1,'expense','Recorrência removida',$2,10,'monthly','2026-01-01') returning id`, [f.userId, f.expenseCategoryId]);
+    await scalar('select public.generate_recurrences($1)', ['2026-01-01']);
+    const recurringExpenseId = await scalar('select id from public.transactions where recurrence_rule_id=$1', [recurrenceId]);
+    await db.query('select public.delete_expense($1)', [recurringExpenseId]);
     const expenseId = await transaction(f);
     const movementId = await scalar('select public.settle_transaction($1,$2,$3,$4)', [expenseId, f.accountId, 'pix', '2026-01-10']);
     await scalar('select public.reverse_movement($1,$2)', [movementId, '2026-01-11']);
@@ -626,6 +652,7 @@ test('deleting an Auth user cascades its financial data while ordinary historica
     await mustReject('delete from public.transactions where id=$1', [expenseId]);
     await mustReject('delete from public.credit_cards where id=$1', [f.cardId]);
   });
+  assert.equal(Number(await scalar('select count(*) from private.recurrence_exceptions where user_id=$1', [f.userId])), 1);
   await db.exec('set role supabase_auth_admin');
   try {
     await db.query('delete from auth.users where id=$1', [f.userId]);
@@ -636,6 +663,7 @@ test('deleting an Auth user cascades its financial data while ordinary historica
     assert.equal(Number(await scalar(`select count(*) from public.${table} where user_id=$1`, [f.userId])), 0);
   }
   assert.equal(Number(await scalar('select count(*) from public.profiles where id=$1', [f.userId])), 0);
+  assert.equal(Number(await scalar('select count(*) from private.recurrence_exceptions where user_id=$1', [f.userId])), 0);
 });
 
 test('integrated MVP scenario preserves competence, cash, invoices, reversals, and balances', async () => {
