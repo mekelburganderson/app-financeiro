@@ -274,6 +274,7 @@ export type Database = {
           active: boolean;
           created_at: string;
           updated_at: string;
+          notes: string | null;
         };
         Insert: {
           id?: string;
@@ -293,6 +294,7 @@ export type Database = {
           active?: boolean;
           created_at?: string;
           updated_at?: string;
+          notes?: string | null;
         };
         Update: {
           id?: string;
@@ -312,6 +314,7 @@ export type Database = {
           active?: boolean;
           created_at?: string;
           updated_at?: string;
+          notes?: string | null;
         };
         Relationships: [
           { foreignKeyName: "recurrence_rules_account_fkey"; columns: ["user_id","account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["user_id","id"] },
@@ -434,13 +437,22 @@ export type Database = {
       };
     };
     Functions: {
-      close_invoice: { Args: { p_invoice_id: string }; Returns: undefined };
-      create_card_purchase: { Args: { p_credit_card_id: string; p_category_id: string; p_description: string; p_amount: number; p_transaction_date: string; p_installment_count?: number }; Returns: (string)[] };
-      generate_recurrences: { Args: { p_through_date: string }; Returns: number };
-      pay_invoice: { Args: { p_invoice_id: string; p_account_id: string; p_paid_at: string }; Returns: string };
-      reverse_movement: { Args: { p_movement_id: string; p_reversed_at: string }; Returns: string };
-      settle_transaction: { Args: { p_transaction_id: string; p_account_id: string; p_payment_method: Database['public']['Enums']['payment_method']; p_settled_at: string }; Returns: string };
-      transfer_between_accounts: { Args: { p_from_account_id: string; p_to_account_id: string; p_amount: number; p_movement_date: string; p_description: string; p_transfer_group_id: string }; Returns: string };
+      close_invoice: { Args: { p_invoice_id: string | null }; Returns: undefined };
+      create_card_purchase: { Args: { p_credit_card_id: string | null; p_category_id: string | null; p_description: string | null; p_amount: number | null; p_transaction_date: string | null; p_installment_count?: number | null }; Returns: (string)[] };
+      create_expense_card_purchase: { Args: { p_credit_card_id: string | null; p_category_id: string | null; p_description: string | null; p_amount: number | null; p_transaction_date: string | null; p_notes: string | null; p_installment_count: number | null }; Returns: (string)[] };
+      create_expense_recurrence: { Args: { p_description: string | null; p_category_id: string | null; p_amount: number | null; p_frequency: Database['public']['Enums']['recurrence_frequency'] | null; p_interval_count: number | null; p_start_date: string | null; p_end_date: string | null; p_max_occurrences: number | null; p_payment_method: Database['public']['Enums']['payment_method'] | null; p_credit_card_id: string | null; p_account_id: string | null; p_notes: string | null; p_through_date: string | null }; Returns: string };
+      create_income_recurrence: { Args: { p_description: string | null; p_category_id: string | null; p_amount: number | null; p_frequency: Database['public']['Enums']['recurrence_frequency'] | null; p_interval_count: number | null; p_start_date: string | null; p_end_date: string | null; p_max_occurrences: number | null; p_account_id: string | null; p_notes: string | null; p_through_date: string | null }; Returns: string };
+      create_installment_expense: { Args: { p_description: string | null; p_category_id: string | null; p_amount: number | null; p_transaction_date: string | null; p_due_date: string | null; p_payment_method: Database['public']['Enums']['payment_method'] | null; p_notes: string | null; p_account_id: string | null; p_installment_count: number | null }; Returns: (string)[] };
+      create_paid_expense: { Args: { p_description: string | null; p_category_id: string | null; p_amount: number | null; p_transaction_date: string | null; p_due_date: string | null; p_planned_payment_method: Database['public']['Enums']['payment_method'] | null; p_notes: string | null; p_account_id: string | null; p_payment_method: Database['public']['Enums']['payment_method'] | null; p_settled_at: string | null }; Returns: string };
+      create_received_income: { Args: { p_description: string | null; p_category_id: string | null; p_amount: number | null; p_transaction_date: string | null; p_due_date: string | null; p_notes: string | null; p_account_id: string | null; p_received_at: string | null }; Returns: string };
+      generate_recurrences: { Args: { p_through_date: string | null }; Returns: number };
+      pay_invoice: { Args: { p_invoice_id: string | null; p_account_id: string | null; p_paid_at: string | null }; Returns: string };
+      reverse_movement: { Args: { p_movement_id: string | null; p_reversed_at: string | null }; Returns: string };
+      reverse_transfer_group: { Args: { p_transfer_group_id: string | null; p_reversed_at: string | null }; Returns: string };
+      settle_transaction: { Args: { p_transaction_id: string | null; p_account_id: string | null; p_payment_method: Database['public']['Enums']['payment_method'] | null; p_settled_at: string | null }; Returns: string };
+      transfer_between_accounts: { Args: { p_from_account_id: string | null; p_to_account_id: string | null; p_amount: number | null; p_movement_date: string | null; p_description: string | null; p_transfer_group_id: string | null }; Returns: string };
+      update_expense: { Args: { p_expense_id: string | null; p_description: string | null; p_category_id: string | null; p_amount: number | null; p_transaction_date: string | null; p_due_date: string | null; p_payment_method: Database['public']['Enums']['payment_method'] | null; p_credit_card_id: string | null; p_account_id: string | null; p_notes: string | null }; Returns: string };
+      update_income: { Args: { p_income_id: string | null; p_description: string | null; p_category_id: string | null; p_amount: number | null; p_transaction_date: string | null; p_due_date: string | null; p_notes: string | null }; Returns: string };
     };
     Enums: {
       account_type: "checking" | "savings" | "cash" | "other";

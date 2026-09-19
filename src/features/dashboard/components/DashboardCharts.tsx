@@ -1,0 +1,10 @@
+import { formatBRL } from '../../../lib/finance'
+import type { CategoryMetric, MonthlyMetric } from '../types'
+
+export function CategoryChart({title,items,emptyText}:{title:string;items:CategoryMetric[];emptyText:string}){
+  return <section className="dashboard-panel" aria-labelledby={`${title.replaceAll(' ','-')}-title`}><div className="dashboard-panel-heading"><h2 id={`${title.replaceAll(' ','-')}-title`}>{title}</h2></div>{!items.length?<p className="dashboard-panel-empty">{emptyText}</p>:<div className="category-chart">{items.slice(0,6).map((item)=><div className="category-chart-row" key={item.id}><div><strong>{item.name}</strong><span>{formatBRL(item.amount)} · {item.percentage.toFixed(1)}%</span></div><div className="category-chart-track" aria-hidden="true"><span style={{width:`${item.percentage}%`}}/></div></div>)}</div>}</section>
+}
+export function MonthlyEvolutionChart({items}:{items:MonthlyMetric[]}){
+  const max=Math.max(1,...items.flatMap((item)=>[item.income,item.expense,Math.abs(item.result)]))
+  return <section className="dashboard-panel dashboard-evolution" aria-labelledby="monthly-evolution-title"><div className="dashboard-panel-heading"><h2 id="monthly-evolution-title">Evolução mensal</h2><span>Competência</span></div>{!items.some((item)=>item.income||item.expense)?<p className="dashboard-panel-empty">Sem movimentações por competência no período.</p>:<div className="evolution-chart" role="img" aria-label="Receitas, despesas e resultado por mês">{items.map((item)=><div className="evolution-month" key={item.month}><strong>{item.label}</strong><div><span>Receitas</span><i className="evolution-income" style={{width:`${item.income/max*100}%`}}/><b>{formatBRL(item.income)}</b></div><div><span>Despesas</span><i className="evolution-expense" style={{width:`${item.expense/max*100}%`}}/><b>{formatBRL(item.expense)}</b></div><div><span>Resultado</span><i className={item.result>=0?'evolution-result-positive':'evolution-result-negative'} style={{width:`${Math.abs(item.result)/max*100}%`}}/><b>{formatBRL(item.result)}</b></div></div>)}</div>}</section>
+}

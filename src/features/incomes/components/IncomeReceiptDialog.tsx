@@ -1,0 +1,12 @@
+import { useEffect, useRef, useState } from 'react'
+import type { FormEvent, RefObject } from 'react'
+import { ModalSurface } from '../../../components/ModalSurface'
+import { todayISO } from '../../../lib/finance'
+import type { Account } from '../../accounts/types'
+
+export function IncomeReceiptDialog({mode,accounts,busy,error,onCancel,onConfirm}:{mode:'receive'|'reverse';accounts:Account[];busy:boolean;error:string|null;onCancel:()=>void;onConfirm:(accountId:string,date:string)=>Promise<void>}){
+  const[accountId,setAccountId]=useState(''),[date,setDate]=useState(todayISO()),[validation,setValidation]=useState<string|null>(null),first=useRef<HTMLSelectElement|HTMLInputElement>(null)
+  useEffect(()=>{const old=document.activeElement as HTMLElement|null;first.current?.focus();return()=>old?.focus()},[])
+  async function submit(event:FormEvent){event.preventDefault();if(!date){setValidation('Informe a data da operação.');return}if(mode==='receive'&&!accountId){setValidation('Selecione a conta de recebimento.');return}setValidation(null);await onConfirm(accountId,date)}
+  return <ModalSurface titleId="income-receipt-title" busy={busy} onClose={onCancel}><h2 id="income-receipt-title">{mode==='receive'?'Marcar como recebida':'Desfazer recebimento'}</h2><p>{mode==='receive'?'Informe onde o valor entrou.':'O saldo será recomposto por um movimento inverso.'}</p><form onSubmit={submit} noValidate>{mode==='receive'&&<><label htmlFor="income-receipt-account">Conta *</label><select id="income-receipt-account" ref={first as RefObject<HTMLSelectElement>} value={accountId} onChange={(event)=>setAccountId(event.target.value)} disabled={busy}><option value="">Selecione</option>{accounts.filter((account)=>account.active).map((account)=><option key={account.id} value={account.id}>{account.name}</option>)}</select></>}<label htmlFor="income-receipt-date">{mode==='receive'?'Data do recebimento':'Data do estorno'} *</label><input id="income-receipt-date" ref={mode==='reverse'?first as RefObject<HTMLInputElement>:undefined} type="date" value={date} onChange={(event)=>setDate(event.target.value)} disabled={busy}/>{(validation||error)&&<p className="account-form-error" role="alert">{validation||error}</p>}<div className="account-form-actions"><button type="button" className="account-secondary-button" onClick={onCancel} disabled={busy}>Cancelar</button><button className="account-primary-button" disabled={busy}>{busy?'Processando…':mode==='receive'?'Confirmar recebimento':'Confirmar estorno'}</button></div></form></ModalSurface>
+}

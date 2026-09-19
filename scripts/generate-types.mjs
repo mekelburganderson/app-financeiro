@@ -66,7 +66,9 @@ try {
   output += '    Functions: {\n';
   for (const f of functions) {
     output += `      ${f.proname}: { Args: { `;
-    output += (f.proargnames ?? []).map((name, i) => `${name}${i >= f.arg_types.length - f.pronargdefaults ? '?' : ''}: ${type(f.arg_types[i])}`).join('; ');
+    // PostgreSQL arguments can receive NULL even when the function rejects it at
+    // runtime. Preserve that call shape for optional date, note and account inputs.
+    output += (f.proargnames ?? []).map((name, i) => `${name}${i >= f.arg_types.length - f.pronargdefaults ? '?' : ''}: ${type(f.arg_types[i])} | null`).join('; ');
     output += ` }; Returns: ${type(f.result_type)} };\n`;
   }
   output += '    };\n    Enums: {\n';

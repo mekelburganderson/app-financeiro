@@ -12,3 +12,24 @@ Thumbs.db
 npm-debug.log*
 supabase/.temp/
 supabase/.branches/
+
+# Arquivos locais do Cloudflare e credenciais privadas
+.wrangler/
+.dev.vars
+.dev.vars.*
+credentials/
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+client_secret*.json
+service-account*.json
+
+# Temporários e logs
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*.log
