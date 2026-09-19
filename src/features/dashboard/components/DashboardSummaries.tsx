@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import { formatBRL } from '../../../lib/finance'
 import type { CashFlow } from '../types'
-export function SummaryCard({label,value,icon:Icon,tone='neutral'}:{label:string;value:number;icon:LucideIcon;tone?:string}){return <article className={`dashboard-summary-card dashboard-summary-${tone}`}><span><Icon size={20} aria-hidden="true"/></span><p>{label}</p><strong>{formatBRL(value)}</strong></article>}
+import { PrivateAmount } from '../../privacy/PrivateAmount'
+export function SummaryCard({label,value,icon:Icon,tone='neutral',privateValue=false}:{label:string;value:number;icon:LucideIcon;tone?:string;privateValue?:boolean}){return <article className={`dashboard-summary-card dashboard-summary-${tone}`}><span><Icon size={20} aria-hidden="true"/></span><p>{label}</p><strong>{privateValue?<PrivateAmount value={value}/>:formatBRL(value)}</strong></article>}
 export function CashFlowSummary({cash}:{cash:CashFlow}){return <section className="dashboard-panel" aria-labelledby="cash-flow-title"><div className="dashboard-panel-heading"><h2 id="cash-flow-title">Fluxo de caixa</h2><span>Transferências internas excluídas</span></div><div className="cash-flow-grid"><div><span>Entradas reais</span><strong>{formatBRL(cash.incoming)}</strong></div><div><span>Saídas reais</span><strong>{formatBRL(cash.outgoing)}</strong></div><div><span>Fluxo líquido</span><strong>{formatBRL(cash.net)}</strong></div></div></section>}

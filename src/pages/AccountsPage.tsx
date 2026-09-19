@@ -3,7 +3,8 @@ import { Landmark, Plus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { AccountForm } from '../features/accounts/components/AccountForm'
 import { useAccounts } from '../features/accounts/hooks/useAccounts'
-import { formatBRL, formatBRDate } from '../lib/finance'
+import { formatBRDate } from '../lib/finance'
+import { PrivateAmount } from '../features/privacy/PrivateAmount'
 import { accountTypeLabels } from '../features/accounts/types'
 import type { AccountInput, AccountWithBalance } from '../features/accounts/types'
 import { createAccount, deactivateAccount, hasAccountMovements, reactivateAccount, updateAccount } from '../features/accounts/services/accounts'
@@ -90,7 +91,7 @@ export function AccountsPage() {
       {shown.map((account) => <article className="account-card" key={account.id}>
         <div className="account-card-top"><span className="account-card-icon"><Landmark size={22} aria-hidden="true" /></span><span className={account.active ? 'account-badge' : 'account-badge account-badge-inactive'}>{account.active ? 'Ativa' : 'Inativa'}</span></div>
         <h2>{account.name}</h2><p className="account-type">{accountTypeLabels[account.type]}</p>
-        <p className="account-balance-label">Saldo atual</p><p className="account-balance">{formatBRL(account.current_balance)}</p>
+        <p className="account-balance-label">Saldo atual</p><p className="account-balance"><PrivateAmount value={account.current_balance} /></p>
         <p className="account-opening">Saldo inicial em {formatBRDate(account.initial_balance_date)}</p>
         <div className="account-card-actions">
           <button className="account-secondary-button" onClick={() => openForm(account)} disabled={busy}>Editar</button>

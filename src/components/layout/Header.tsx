@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { LogOut, Menu } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { signOut } from '../../services/auth'
+import { useLocation } from 'react-router-dom'
+import { BalanceVisibilityToggle } from '../../features/privacy/BalanceVisibilityToggle'
 
 interface HeaderProps { onOpenMenu: () => void }
 
@@ -21,6 +23,8 @@ function avatarUrl(profileUrl: string | null | undefined, metadata: Record<strin
 
 export function Header({ onOpenMenu }: HeaderProps) {
   const { user, profile } = useAuth()
+  const { pathname } = useLocation()
+  const showBalanceVisibility = ['/', '/contas', '/cartoes'].includes(pathname.replace(/\/+$/, '') || '/')
   const [signingOut, setSigningOut] = useState(false)
   const [logoutError, setLogoutError] = useState(false)
   const name = userName(profile?.full_name, user?.user_metadata, user?.email)
@@ -41,6 +45,7 @@ export function Header({ onOpenMenu }: HeaderProps) {
         <span className="header-context">Seu painel pessoal</span>
       </div>
       <div className="header-actions">
+        {showBalanceVisibility && <BalanceVisibilityToggle />}
         {logoutError && <span className="header-error" role="alert">Não foi possível sair. Tente novamente.</span>}
         <div className="user-chip">
           {avatar ? <img className="user-avatar" src={avatar} alt="" referrerPolicy="no-referrer" /> :

@@ -1,5 +1,5 @@
 import { CreditCard as CreditCardIcon } from 'lucide-react'
-import { formatBRL } from '../../../lib/finance'
+import { PrivateAmount } from '../../privacy/PrivateAmount'
 import { formatCardDay } from '../days'
 import type { CreditCard } from '../types'
 
@@ -16,7 +16,7 @@ export function CreditCardCard({ card, busy, onEdit, onChangeStatus }: {
     </div>
     <h2>{card.name}</h2>
     <p className="account-balance-label">Limite cadastrado</p>
-    <p className="account-balance">{formatBRL(card.limit_amount)}</p>
+    <p className="account-balance"><PrivateAmount value={card.limit_amount} /></p>
     <div className="credit-card-days"><span>Fecha dia {formatCardDay(card.closing_day)}</span><span>Vence dia {formatCardDay(card.due_day)}</span></div>
     <div className="account-card-actions">
       <button className="account-secondary-button" onClick={onEdit} disabled={busy}>Editar</button>

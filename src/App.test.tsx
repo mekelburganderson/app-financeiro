@@ -24,7 +24,7 @@ function mount(path: string, state: AuthState) {
   </MemoryRouter>)
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => { vi.clearAllMocks(); localStorage.clear() })
 afterEach(cleanup)
 
 test('private route waits for the session and never flashes login', () => {

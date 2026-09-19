@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import type { User } from '@supabase/supabase-js'
 import { AuthContext } from '../features/auth/auth-context'
 import type { AuthState } from '../features/auth/auth-context'
+import { BalanceVisibilityProvider } from '../features/privacy/BalanceVisibilityProvider'
+import { BalanceVisibilityToggle } from '../features/privacy/BalanceVisibilityToggle'
 import type { AccountWithBalance } from '../features/accounts/types'
 import { AccountsPage } from './AccountsPage'
 import { createAccount, deactivateAccount, hasAccountMovements, listAccounts, reactivateAccount, updateAccount } from '../features/accounts/services/accounts'
@@ -21,9 +23,12 @@ const active: AccountWithBalance = {
 }
 const inactive: AccountWithBalance = { ...active, id: 'account-2', name: 'Reserva', type: 'savings', active: false, current_balance: -50 }
 
-function mount() {
-  return render(<AuthContext.Provider value={state}><AccountsPage /></AuthContext.Provider>)
+function page(authState = state) {
+  return <AuthContext.Provider value={authState}><BalanceVisibilityProvider>
+    <BalanceVisibilityToggle /><AccountsPage />
+  </BalanceVisibilityProvider></AuthContext.Provider>
 }
+function mount() { return render(page()) }
 async function loaded() { await waitFor(() => expect(screen.queryByText('Carregando contas…')).toBeNull()) }
 function openNew() { fireEvent.click(screen.getByRole('button', { name: 'Nova conta' })) }
 function fill(name = '  Minha conta  ', balance = '1.234,56') {
@@ -34,6 +39,7 @@ function fill(name = '  Minha conta  ', balance = '1.234,56') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
   vi.mocked(listAccounts).mockResolvedValue([])
   vi.mocked(createAccount).mockResolvedValue()
   vi.mocked(updateAccount).mockResolvedValue()
@@ -66,6 +72,28 @@ test('4: shows the view balance as BRL and the opening date as BR date', async (
   vi.mocked(listAccounts).mockResolvedValue([active]); mount(); await loaded()
   expect(screen.getByText(/R\$\s*1\.250,50/)).toBeTruthy()
   expect(screen.getByText('Saldo inicial em 15/09/2026')).toBeTruthy()
+})
+
+test('hides and reveals active and inactive balances without changing accounts', async () => {
+  vi.mocked(listAccounts).mockResolvedValue([active, inactive]); mount(); await loaded()
+  fireEvent.click(screen.getByRole('button', { name: /Ocultar/i }))
+  expect(screen.queryByText(/R\$\s*1\.250,50/)).toBeNull()
+  expect(screen.getByText('Nubank')).toBeTruthy()
+  expect(screen.getByText('Saldo inicial em 15/09/2026')).toBeTruthy()
+
+  fireEvent.click(screen.getByRole('button', { name: /Inativas/ }))
+  expect(screen.getByText('Reserva')).toBeTruthy()
+  expect(screen.queryByText(/R\$\s*-?50,00/)).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: /Mostrar/i }))
+  expect(screen.getByText(/R\$\s*50,00/)).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: /^Ativas/ }))
+  expect(screen.getByText(/R\$\s*1\.250,50/)).toBeTruthy()
+
+  expect(listAccounts).toHaveBeenCalledTimes(1)
+  expect(createAccount).not.toHaveBeenCalled()
+  expect(updateAccount).not.toHaveBeenCalled()
+  expect(deactivateAccount).not.toHaveBeenCalled()
+  expect(reactivateAccount).not.toHaveBeenCalled()
 })
 test('5: creates an active account with the authenticated owner and refreshes', async () => {
   mount(); await loaded(); openNew(); fill()
@@ -143,7 +171,7 @@ test('a changed authenticated owner never sees the previous owner\'s account whi
   const view = mount(); await loaded()
   expect(screen.getByText('Nubank')).toBeTruthy()
   const nextState: AuthState = { ...state, user: { id: 'user-2' } as User }
-  view.rerender(<AuthContext.Provider value={nextState}><AccountsPage /></AuthContext.Provider>)
+  view.rerender(page(nextState))
   expect(screen.queryByText('Nubank')).toBeNull()
   expect(screen.getByText('Carregando contas…')).toBeTruthy()
 })

@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import type { User } from '@supabase/supabase-js'
 import { AuthContext } from '../features/auth/auth-context'
 import type { AuthState } from '../features/auth/auth-context'
+import { BalanceVisibilityProvider } from '../features/privacy/BalanceVisibilityProvider'
+import { BalanceVisibilityToggle } from '../features/privacy/BalanceVisibilityToggle'
 import type { CreditCard } from '../features/credit-cards/types'
 import { CreditCardsPage } from './CreditCardsPage'
 import { CreditCardServiceError, createCreditCard, creditCardHasUsage, deactivateCreditCard, listCreditCards, reactivateCreditCard, updateCreditCard } from '../features/credit-cards/services/creditCards'
@@ -19,7 +21,12 @@ const card: CreditCard = { id: 'card-1', user_id: user.id, name: 'Nubank', limit
   closing_day: 25, due_day: 3, active: true, created_at: '2026-09-15', updated_at: '2026-09-15' }
 const inactive: CreditCard = { ...card, id: 'card-2', name: 'Reserva', limit_amount: 0, active: false }
 
-function mount() { return render(<AuthContext.Provider value={state}><CreditCardsPage /></AuthContext.Provider>) }
+function page(authState = state) {
+  return <AuthContext.Provider value={authState}><BalanceVisibilityProvider>
+    <BalanceVisibilityToggle /><CreditCardsPage />
+  </BalanceVisibilityProvider></AuthContext.Provider>
+}
+function mount() { return render(page()) }
 async function loaded() { await waitFor(() => expect(screen.queryByText('Carregando cartões…')).toBeNull()) }
 function openNew() { fireEvent.click(screen.getByRole('button', { name: 'Novo cartão' })) }
 function fill(name = '  Meu cartão  ', limit = '8.000,50', closing = '25', due = '03') {
@@ -32,6 +39,7 @@ function create() { fireEvent.click(screen.getByRole('button', { name: 'Criar ca
 
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
   vi.mocked(listCreditCards).mockResolvedValue([])
   vi.mocked(createCreditCard).mockResolvedValue()
   vi.mocked(updateCreditCard).mockResolvedValue()
@@ -72,6 +80,28 @@ test('4: status filter defaults to active and offers inactive and all', async ()
 test('5: registered limit is formatted in Brazilian real', async () => {
   vi.mocked(listCreditCards).mockResolvedValue([card]); mount(); await loaded()
   expect(screen.getByText(/R\$\s*8\.000,00/)).toBeTruthy()
+})
+
+test('hides and reveals registered limits for active and inactive cards without changing them', async () => {
+  vi.mocked(listCreditCards).mockResolvedValue([card, inactive]); mount(); await loaded()
+  fireEvent.click(screen.getByRole('button', { name: /Ocultar/i }))
+  expect(screen.queryByText(/R\$\s*8\.000,00/)).toBeNull()
+  expect(screen.getByText('Nubank')).toBeTruthy()
+  expect(screen.getByText('Fecha dia 25')).toBeTruthy()
+  expect(screen.getByText('Vence dia 03')).toBeTruthy()
+
+  fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'all' } })
+  expect(screen.getByText('Reserva')).toBeTruthy()
+  expect(screen.queryByText(/R\$\s*0,00/)).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: /Mostrar/i }))
+  expect(screen.getByText(/R\$\s*8\.000,00/)).toBeTruthy()
+  expect(screen.getByText(/R\$\s*0,00/)).toBeTruthy()
+
+  expect(listCreditCards).toHaveBeenCalledTimes(1)
+  expect(createCreditCard).not.toHaveBeenCalled()
+  expect(updateCreditCard).not.toHaveBeenCalled()
+  expect(deactivateCreditCard).not.toHaveBeenCalled()
+  expect(reactivateCreditCard).not.toHaveBeenCalled()
 })
 test('6: creates active card with owner, cents and configured days, then refreshes', async () => {
   mount(); await loaded(); openNew(); fill(); create()
@@ -175,7 +205,7 @@ test('17: pending request prevents duplicate submits', async () => {
 test('switching users never shows a previous owner card while loading', async () => {
   vi.mocked(listCreditCards).mockResolvedValueOnce([card]).mockReturnValueOnce(new Promise(() => undefined))
   const view = mount(); await loaded(); expect(screen.getByText('Nubank')).toBeTruthy()
-  view.rerender(<AuthContext.Provider value={{ ...state, user: { id: 'user-2' } as User }}><CreditCardsPage /></AuthContext.Provider>)
+  view.rerender(page({ ...state, user: { id: 'user-2' } as User }))
   expect(screen.queryByText('Nubank')).toBeNull()
   expect(screen.getByText('Carregando cartões…')).toBeTruthy()
 })
